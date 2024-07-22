@@ -1,0 +1,60 @@
+# celery 学习手册
+
+# 安装
+; pip install celery
+; pip install redis
+; pip install flower
+
+
+
+; - ** ---------- [config]
+; - ** ---------- .> app:         celery_app:0x104809820          # celery的模块名称
+; - ** ---------- .> transport:   redis://localhost:6379/10       # broker
+; - ** ---------- .> results:     redis://localhost:6379/10       # backend
+; - *** --- * --- .> concurrency: 20 (prefork)                    # 处理队列的子进程数
+; -- ******* ---- .> task events: ON                              # 监听器，捕获任务相关事件，如celery事件，worker中发生的操作
+; --- ***** ----- 
+;  -------------- [queues]
+;                 .> celery           exchange=celery(direct) key=celery                                    # 默认的 task.routes
+;                 .> fastapi_monitor_cron exchange=fastapi_monitor_cron(direct) key=fastapi_monitor_cron    # 指定的 task.routes
+
+# 运行 redis
+# docker run -dit --name redis -p 6369:6379 redis
+
+
+# 运行 celery beat
+# ./venv/bin/celery -A scheduler.celery beat -l INFO
+
+
+# 运行 celery worker
+# -c --concurrency: 处理队列的子进程数。默认值是系统上可用的cpu数量。
+# -E --task-events, --events: 发送可以由监控器捕获的任务相关事件，如celery事件、celerymon等。
+#                             Events是一个选项，它使Celery发送监视消息(事件)来监视worker中发生的操作。这些可以被监视程序使用，比如celery事件和flower——实时celery监视器
+# -l --loglevel: 日志级别，包含[DEBUG|INFO|WARNING|ERROR|CRITICAL|FATAL]
+# -Q --queues:   指定在task_routes中定义的队列名称
+# --time-limit: 为任务启用硬时间限制，单位为秒
+
+
+# ./venv/bin/celery -A scheduler.celery worker -l INFO -Q queue_monitor
+# ./venv/bin/celery -A scheduler.celery worker -l INFO -Q queue_resource
+
+
+# 运行 celery flower
+# ./venv/bin/celery -A scheduler.celery flower --port=5555
+
+
+
+# 查看集群节点状态
+# ./venv/bin/celery -A scheduler.celery status
+
+# 列出活跃的任务
+# ./venv/bin/celery -A scheduler.celery inspect active
+
+# 列出注册的任务
+# ./venv/bin/celery -A scheduler.celery inspect registered
+
+# 列出统计信息
+# ./venv/bin/celery -A scheduler.celery inspect stats
+
+# 根据taskId查询任务响应信息
+# ./venv/bin/celery -A scheduler.celery inspect query_task 1081dba3-ddaf-4947-b0b9-ce4420792d9f
